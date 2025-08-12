@@ -1,0 +1,333 @@
+        // Fun Facts Array
+        const funFacts = [
+            "The shortest war in history was between Britain and Zanzibar in 1896. Zanzibar surrendered after 38 minutes.",
+            "A jiffy is an actual unit of time: 1/100th of a second.",
+            "Honey never spoils. Archaeologists have found pots of honey in ancient Egyptian tombs that are over 3,000 years old and still perfectly edible.",
+            "Octopuses have three hearts.",
+            "The Eiffel Tower can be 15 cm taller during the summer due to thermal expansion.",
+            "A single cloud can weigh more than 1 million pounds.",
+            "Bananas are berries, but strawberries aren't.",
+            "The inventor of the Frisbee was turned into a Frisbee after he died.",
+            "The dot over the letter 'i' is called a tittle.",
+            "A group of pugs is called a grumble."
+        ];
+        
+        // Game Data
+        const colorNames = ["Red", "Blue", "Yellow", "Purple", "Green", "Pink"];
+        const colorValues = ["#ff6b6b", "#4ecdc4", "#ffd166", "#9d4edd", "#06d6a0", "#ff5d8f"];
+        
+        const triviaQuestions = [
+            {
+                question: "What is the largest planet in our solar system?",
+                options: ["Jupiter", "Saturn", "Earth", "Mars"],
+                answer: 0
+            },
+            {
+                question: "How many elements are in the periodic table?",
+                options: ["118", "92", "102", "156"],
+                answer: 0
+            },
+            {
+                question: "Which animal can be seen on the Porsche logo?",
+                options: ["Horse", "Lion", "Bull", "Eagle"],
+                answer: 0
+            },
+            {
+                question: "What is the most consumed manufactured drink in the world?",
+                options: ["Tea", "Coffee", "Beer", "Coca-Cola"],
+                answer: 0
+            }
+        ];
+        
+        const memoryIcons = [
+            "fa-heart", "fa-star", "fa-moon", "fa-sun",
+            "fa-cloud", "fa-bolt", "fa-snowflake", "fa-tree"
+        ];
+        
+        // DOM Elements
+        const factDisplay = document.getElementById('factDisplay');
+        const newFactBtn = document.getElementById('newFactBtn');
+        const playButtons = document.querySelectorAll('.play-btn');
+        const modals = document.querySelectorAll('.modal');
+        const closeButtons = document.querySelectorAll('.close-btn');
+        
+        // Game Elements
+        const colorName = document.getElementById('colorName');
+        const colorOptions = document.querySelectorAll('.color-option');
+        const colorResult = document.getElementById('colorResult');
+        
+        const triviaQuestion = document.getElementById('triviaQuestion');
+        const triviaOptions = document.querySelectorAll('.trivia-option');
+        const triviaResult = document.getElementById('triviaResult');
+        
+        const memoryBoard = document.getElementById('memoryBoard');
+        const memoryResult = document.getElementById('memoryResult');
+        
+        // Game State
+        let currentColorIndex = 0;
+        let currentTriviaIndex = 0;
+        let matchedPairs = 0;
+        let flippedCards = [];
+        let cardValues = [];
+        
+        // Initialize
+        displayRandomFact();
+        setupColorGame();
+        setupTriviaGame();
+        setupMemoryGame();
+        
+        // Functions
+        function displayRandomFact() {
+            const randomIndex = Math.floor(Math.random() * funFacts.length);
+            factDisplay.textContent = funFacts[randomIndex];
+            
+            factDisplay.style.opacity = 0;
+            setTimeout(() => {
+                factDisplay.style.transition = "opacity 0.5s ease-in-out";
+                factDisplay.style.opacity = 1;
+            }, 10);
+        }
+        
+        function setupColorGame() {
+            currentColorIndex = Math.floor(Math.random() * colorNames.length);
+            colorName.textContent = colorNames[currentColorIndex];
+            colorResult.textContent = "";
+        }
+        
+        function setupTriviaGame() {
+            currentTriviaIndex = 0;
+            displayTriviaQuestion();
+            triviaResult.textContent = "";
+        }
+        
+        function displayTriviaQuestion() {
+            if (currentTriviaIndex >= triviaQuestions.length) {
+                triviaResult.innerHTML = "<h3>Game Completed!</h3><p>You answered all the questions!</p>";
+                createConfetti();
+                return;
+            }
+            
+            const question = triviaQuestions[currentTriviaIndex];
+            triviaQuestion.textContent = question.question;
+            
+            const optionsContainer = document.getElementById('triviaOptions');
+            optionsContainer.innerHTML = '';
+            
+            question.options.forEach((option, index) => {
+                const optionElement = document.createElement('div');
+                optionElement.className = 'trivia-option';
+                optionElement.textContent = option;
+                optionElement.dataset.correct = (index === question.answer) ? "true" : "false";
+                optionElement.addEventListener('click', checkTriviaAnswer);
+                optionsContainer.appendChild(optionElement);
+            });
+        }
+        
+        function setupMemoryGame() {
+            matchedPairs = 0;
+            flippedCards = [];
+            cardValues = [];
+            memoryBoard.innerHTML = '';
+            memoryResult.textContent = '';
+            
+            // Create pairs of icons
+            const allIcons = [...memoryIcons, ...memoryIcons];
+            
+            // Shuffle icons
+            for (let i = allIcons.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [allIcons[i], allIcons[j]] = [allIcons[j], allIcons[i]];
+            }
+            
+            // Create cards
+            allIcons.forEach((icon, index) => {
+                const card = document.createElement('div');
+                card.className = 'memory-card';
+                card.dataset.index = index;
+                
+                const cardFront = document.createElement('div');
+                cardFront.className = 'card-front';
+                cardFront.innerHTML = `<i class="fas ${icon}"></i>`;
+                
+                const cardBack = document.createElement('div');
+                cardBack.className = 'card-back';
+                cardBack.innerHTML = `<i class="fas fa-question"></i>`;
+                
+                card.appendChild(cardFront);
+                card.appendChild(cardBack);
+                
+                card.addEventListener('click', flipCard);
+                memoryBoard.appendChild(card);
+                
+                cardValues.push({
+                    icon: icon,
+                    element: card,
+                    flipped: false
+                });
+            });
+        }
+        
+        // Event Listeners
+        newFactBtn.addEventListener('click', displayRandomFact);
+        
+        playButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const gameType = this.dataset.game;
+                document.getElementById(`${gameType}Modal`).style.display = 'flex';
+                
+                // Reset the specific game
+                if (gameType === 'color') setupColorGame();
+                if (gameType === 'trivia') setupTriviaGame();
+                if (gameType === 'memory') setupMemoryGame();
+            });
+        });
+        
+        closeButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                this.closest('.modal').style.display = 'none';
+            });
+        });
+        
+        window.addEventListener('click', function(e) {
+            modals.forEach(modal => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+        
+        // Color Game Logic
+        colorOptions.forEach(option => {
+            option.addEventListener('click', function() {
+                const selectedColor = this.dataset.color;
+                const correctColor = colorNames[currentColorIndex].toLowerCase();
+                
+                if (selectedColor === correctColor) {
+                    colorResult.innerHTML = "<p style='color: #06d6a0;'>Correct! Well done!</p>";
+                    createConfetti();
+                    setTimeout(() => {
+                        currentColorIndex = Math.floor(Math.random() * colorNames.length);
+                        colorName.textContent = colorNames[currentColorIndex];
+                        colorResult.textContent = "";
+                    }, 1500);
+                } else {
+                    colorResult.innerHTML = `<p style='color: #ff6b6b;'>Incorrect! It was ${correctColor}.</p>`;
+                }
+            });
+        });
+        
+        // Trivia Game Logic
+        function checkTriviaAnswer(e) {
+            const selectedOption = e.target;
+            const isCorrect = selectedOption.dataset.correct === "true";
+            
+            if (isCorrect) {
+                selectedOption.classList.add('correct');
+                setTimeout(() => {
+                    selectedOption.classList.remove('correct');
+                    currentTriviaIndex++;
+                    displayTriviaQuestion();
+                }, 1000);
+            } else {
+                selectedOption.classList.add('incorrect');
+                setTimeout(() => {
+                    selectedOption.classList.remove('incorrect');
+                }, 1000);
+            }
+        }
+        
+        // Memory Game Logic
+        function flipCard(e) {
+            const card = e.currentTarget;
+            const index = parseInt(card.dataset.index);
+            
+            // Ignore if card is already flipped or we have two cards flipped
+            if (cardValues[index].flipped || flippedCards.length === 2) {
+                return;
+            }
+            
+            // Flip the card
+            card.classList.add('flipped');
+            cardValues[index].flipped = true;
+            flippedCards.push(index);
+            
+            // Check for match when two cards are flipped
+            if (flippedCards.length === 2) {
+                const [index1, index2] = flippedCards;
+                
+                if (cardValues[index1].icon === cardValues[index2].icon) {
+                    // Match found
+                    matchedPairs++;
+                    
+                    // Reset flipped cards
+                    setTimeout(() => {
+                        flippedCards = [];
+                        
+                        // Check if game is complete
+                        if (matchedPairs === memoryIcons.length) {
+                            memoryResult.innerHTML = "<h3>Congratulations!</h3><p>You found all the pairs!</p>";
+                            createConfetti();
+                        }
+                    }, 500);
+                } else {
+                    // No match, flip cards back
+                    setTimeout(() => {
+                        cardValues[index1].element.classList.remove('flipped');
+                        cardValues[index2].element.classList.remove('flipped');
+                        cardValues[index1].flipped = false;
+                        cardValues[index2].flipped = false;
+                        flippedCards = [];
+                    }, 1000);
+                }
+            }
+        }
+        
+        // Confetti Effect
+        function createConfetti() {
+            const colors = ['#ff6b6b', '#4ecdc4', '#ffd166', '#9d4edd', '#ff5d8f'];
+            
+            for (let i = 0; i < 150; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.width = Math.random() * 10 + 5 + 'px';
+                confetti.style.height = Math.random() * 10 + 5 + 'px';
+                confetti.style.animationDuration = Math.random() * 3 + 2 + 's';
+                
+                document.body.appendChild(confetti);
+                
+                // Remove confetti after animation
+                setTimeout(() => {
+                    confetti.remove();
+                }, 5000);
+            }
+        }
+        
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+                
+                // Update active link
+                document.querySelectorAll('nav a').forEach(link => {
+                    link.classList.remove('active');
+                });
+                this.classList.add('active');
+            });
+        });
+        
+        // Add floating animation to feature cards on hover
+        document.querySelectorAll('.feature-card').forEach(card => {
+            card.addEventListener('mouseenter', () => {
+                card.classList.add('floating');
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.classList.remove('floating');
+            });
+        });
